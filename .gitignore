@@ -1,9 +1,21 @@
+# Entornos virtuales
 .venv/
 .idea/
+
+# Jupyter
 .ipynb_checkpoints/
 
+# Python
 *.pyc
 __pycache__/
 
+# Archivos de sistema operativo
 .DS_Store
 Thumbs.db
+
+# Metadatos del editor / entorno de desarrollo (no forman parte del proyecto)
+.stubs/
+.stub-info
+.vfsmeta/
+.vscode/
+.work-folder-info
