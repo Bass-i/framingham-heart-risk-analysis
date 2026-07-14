@@ -1,7 +1,7 @@
 # Framingham Heart Risk Analysis
 
-Análisis estadístico e inferencial de factores de riesgo cardiovascular utilizando el
-**Framingham Heart Study**, desarrollado como proyecto del curso **MCDI501: Estadística
+Análisis estadístico, inferencial y predictivo de factores de riesgo cardiovascular utilizando
+el **Framingham Heart Study**, desarrollado como proyecto del curso **MCDI501: Estadística
 Computacional para la Toma de Decisiones** (Magíster en Ciencia de Datos e Inteligencia
 Artificial, Universidad Andrés Bello), bajo la metodología de Aprendizaje Basado en Proyectos
 (ABP).
@@ -13,21 +13,22 @@ Artificial, Universidad Andrés Bello), bajo la metodología de Aprendizaje Basa
 
 ## 📋 Propósito del proyecto
 
-El objetivo general es estimar y validar factores de riesgo asociados al desarrollo de
-enfermedad coronaria a 10 años (`TenYearCHD`), avanzando progresivamente a través de las tres
-fases del método de proyectos del curso:
+El objetivo general es estimar, validar y **modelar predictivamente** los factores de riesgo
+asociados al desarrollo de enfermedad coronaria a 10 años (`TenYearCHD`), avanzando de forma
+acumulativa a través de las fases del método de proyectos del curso:
 
 | Fase | Entregable | Foco |
 |---|---|---|
 | **Fase 2** | Sumativa 1 | Estadística descriptiva, intervalos de confianza, pruebas de hipótesis |
 | **Fase 3** | Sumativa 2 | Simulación y remuestreo: bootstrap, permutación, Monte Carlo, robustez |
-| **Fase 4** | Sumativa 3 *(próxima)* | Modelado predictivo: regresión logística, árboles, Random Forest |
+| **Fase 3–4** | Formativa 2 | Práctica de modelamiento: primera regresión logística |
+| **Fase 4** | Sumativa 3 | Modelamiento predictivo integrado: imputación, 3 modelos logísticos, estabilidad y diagnósticos |
 
-Cada fase se construye explícitamente sobre los resultados de la anterior: la Sumativa 2 no
-repite el análisis exploratorio de la Sumativa 1, sino que **valida computacionalmente** sus
-intervalos de confianza, pruebas de hipótesis y correlaciones mediante técnicas de remuestreo
-y simulación, dejando además un conjunto de resultados e insumos ya preparados para el
-modelado predictivo de la Sumativa 3.
+Cada fase se construye explícitamente sobre los resultados de la anterior. La **Sumativa 3** es
+el cierre integrado: no repite análisis previos, sino que lleva al modelamiento predictivo
+todo lo validado en S1 (correlaciones, outliers, faltantes) y S2 (correlaciones estables,
+colinealidad resuelta, tamaño del efecto, representatividad del faltante), incorporando además
+las tres correcciones señaladas por el docente en la retroalimentación de S2.
 
 ---
 
@@ -36,22 +37,26 @@ modelado predictivo de la Sumativa 3.
 ```
 framingham-heart-risk-analysis/
 ├── data/
-│   └── framingham.csv          # Dataset original (Kaggle: aasheesh200/framingham-heart-study-dataset)
+│   ├── framingham.csv                # Dataset original (Kaggle)
+│   └── framingham_imputado.csv       # Dataset tras imputación por regresión (generado en S3)
 ├── figs/
-│   ├── sumativa1/               # Figuras generadas por el notebook de la Sumativa 1
-│   └── sumativa2/               # Figuras generadas por el notebook de la Sumativa 2
+│   ├── sumativa1/                    # Figuras de la Sumativa 1
+│   ├── sumativa2/                    # Figuras de la Sumativa 2
+│   └── sumativa3/                    # Figuras de la Sumativa 3 (8 figuras)
 ├── notebook/
-│   ├── Sumativa_1.ipynb         # Fase 2: descriptiva, IC, pruebas de hipótesis
-│   └── Sumativa_2.ipynb         # Fase 3: bootstrap, permutación, Monte Carlo, robustez
+│   ├── Sumativa_1.ipynb              # Fase 2: descriptiva, IC, pruebas de hipótesis
+│   ├── Sumativa_2.ipynb              # Fase 3: bootstrap, permutación, Monte Carlo, robustez
+│   ├── Formativa_2.ipynb             # Práctica: primera regresión logística
+│   └── Sumativa_3.ipynb              # Fase 4: imputación + 3 modelos + estabilidad + diagnósticos
+├── informe/                          # Informes técnicos (PDF/DOCX) por entrega
 ├── .gitignore
 ├── requirements.txt
 └── README.md
 ```
 
-**Convención de rutas:** ambos notebooks viven en `notebook/` y referencian los datos y las
-figuras con rutas relativas (`../data/framingham.csv`, `../figs/sumativa1/` o
-`../figs/sumativa2/`), por lo que **deben ejecutarse desde su ubicación original** dentro de
-`notebook/` para que las rutas relativas funcionen correctamente.
+**Convención de rutas:** los notebooks viven en `notebook/` y referencian datos y figuras con
+rutas relativas (`../data/…`, `../figs/sumativaN/`), por lo que **deben ejecutarse desde su
+ubicación original** dentro de `notebook/`.
 
 ---
 
@@ -59,42 +64,56 @@ figuras con rutas relativas (`../data/framingham.csv`, `../figs/sumativa1/` o
 
 - **Fuente:** [Framingham Heart Study](https://www.kaggle.com/datasets/aasheesh200/framingham-heart-study-dataset) (Kaggle)
 - **Tamaño original:** 4.240 registros × 16 variables demográficas, conductuales y clínicas
-- **Variable objetivo:** `TenYearCHD` (desarrollo de enfermedad coronaria a 10 años, binaria)
-- **Limpieza:** `dropna()` (listwise deletion) → **3.658 registros completos** (582 registros
-  excluidos, 13,7% del total). La Sumativa 2 evalúa explícitamente si estos registros excluidos
-  difieren sistemáticamente de los conservados (Sección 6 del notebook de Sumativa 2).
+- **Variable objetivo:** `TenYearCHD` (enfermedad coronaria a 10 años, binaria; ≈15,2% positivos)
+- **Valores faltantes:** concentrados en `glucose` (9,15%), `education` (2,48%), `BPMeds`,
+  `totChol`, `cigsPerDay`, `BMI`, `heartRate`.
 
 ---
 
-## 🔬 Contenido de cada notebook
+## 🔬 Contenido de la Sumativa 3 (`notebook/Sumativa_3.ipynb`)
 
-### `notebook/Sumativa_1.ipynb` — Fase 2
+El notebook está organizado en checkpoints alineados 1:1 con la rúbrica (108 pts):
 
-1. Preparación y carga de datos (faltantes por variable, `dropna()`)
-2. Análisis exploratorio (estadística descriptiva, correlaciones, visualizaciones)
-3. Estimación de parámetros: 4 intervalos de confianza (edad, colesterol, presión sistólica —
-   distribución t de Student — y proporción de CHD — método de Wilson)
-4. Pruebas de hipótesis: edad~sexo (t de Welch), tabaquismo~CHD (chi-cuadrado), glucosa~diabetes
-   (t de Welch)
+**1. Imputación y manejo de datos faltantes (21 pts)**
+- Clasificación formal del patrón de faltantes: se confirma **MAR** (Missing At Random),
+  probando que la ausencia de cada variable se asocia con variables observadas (p. ej. la
+  ausencia de `BMI` se relaciona con `prevalentStroke` y con `TenYearCHD`).
+- **Imputación por regresión lineal múltiple** de las 5 variables numéricas con faltantes, en
+  orden secuencial, con predictores justificados en S1/S2.
+- Comparación de 3 estrategias (eliminación, imputación simple, imputación por regresión) en
+  tamaño muestral, distribución y preservación de correlaciones.
 
-### `notebook/Sumativa_2.ipynb` — Fase 3
+**2. Clasificación mediante regresión logística — 3 modelos (30 pts)**
+- **Modelo 1** (informado por S1/S2): `age`, `pulsePressure`, `totChol`, `glucose`, `male`.
+- **Modelo 2** (stepwise forward por p-valor).
+- **Modelo 3** (mejor subconjunto por AIC, búsqueda exhaustiva de 8.191 combinaciones).
+- Interpretación de coeficientes, odds ratios y significancia; matrices de confusión, métricas
+  y curvas ROC/AUC para los tres.
 
-Todo el trabajo de esta fase usa **exclusivamente parámetros y resultados de la Sumativa 1**
-como punto de partida, con semilla fija (`SEED = 42`) y un mínimo de 10.000 iteraciones en cada
-procedimiento de remuestreo/simulación:
+**3. Estabilidad y bootstrap del modelo final (30 pts)**
+- Bootstrap de coeficientes (10.000 remuestras), comparando IC bootstrap vs. Wald.
+- Diagnósticos: VIF, linealidad en el logit (Box-Tidwell), observaciones influyentes
+  (distancia de Cook) y análisis de residuos (Pearson y desviancia).
 
-1. **Bootstrap de parámetros poblacionales** — validación de los 4 IC de S1 (percentil y BCa)
-2. **Permutación** — validación de dos pruebas de hipótesis de S1 (glucosa~diabetes y
-   tabaquismo~CHD), incluyendo **tamaño del efecto** (d de Cohen, V de Cramér)
-3. **Estabilidad de correlaciones** — IC bootstrap para 4 correlaciones relevantes
-4. **Simulación Monte Carlo** — escenario de riesgo conjunto (hipertensión + hipercolesterolemia)
-   basado en parámetros de S1, con verificación de convergencia
-5. **Análisis de robustez** — jackknife y sensibilidad a outliers
-6. **Representatividad de los registros excluidos** — comparación estadística entre los 582
-   registros excluidos por `dropna()` y los 3.658 conservados
-7. **Diagnóstico y resolución de colinealidad** — VIF sobre `sysBP`/`diaBP` y recomendación de
-   variable combinada para el modelo predictivo de S3
-8. **Síntesis de resultados validados** — tabla resumen e insumos preparados para la Sumativa 3
+**4. Análisis comparativo del impacto de la imputación (9 pts)**
+- El modelo final se reajusta sobre las tres estrategias de datos faltantes y se comparan
+  coeficientes, significancia y desempeño, documentando el trade-off encontrado.
+
+**4.5 Apéndice — corrección del Monte Carlo de S2** (atiende la retroalimentación docente):
+reemplaza la normal bivariada por muestreo desde la distribución empírica, reduciendo el error
+de estimación del riesgo conjunto de 5,54 a 0,57 puntos porcentuales.
+
+**5. Síntesis integrada S1 → S2 → S3** con recomendaciones metodológicas futuras.
+
+### Trazabilidad con la retroalimentación del docente (S2)
+
+| Instrucción del docente | Dónde se atiende |
+|---|---|
+| Priorizar `glucose`/`diabetes` (d≈4,8) | Selección de variables del Modelo 1 (Sección 2.2) |
+| Usar `pulsePressure` en vez de `sysBP`+`diaBP` | Todos los modelos; VIF verificado (Sección 3.2) |
+| Descartar `heartRate` como predictor aislado | Universo de candidatas (Sección 2.2) |
+| Hacerse cargo del sesgo de sexo con imputación | Estrategia final = imputación por regresión (Sección 1.5) |
+| Monte Carlo con distribución empírica | Sección 4.5 |
 
 ---
 
@@ -111,111 +130,80 @@ cd framingham-heart-risk-analysis
 
 ```bash
 python3 -m venv venv
-
-# Activar el entorno
 source venv/bin/activate        # Linux / macOS
 venv\Scripts\activate           # Windows
 ```
 
 ### 3. Instalar dependencias
 
-Todas las librerías necesarias están fijadas en `requirements.txt`:
+Todas las librerías necesarias (incluidas las nuevas de S3: `statsmodels` para regresión
+logística/VIF, y los módulos de `scikit-learn` para imputación y métricas) están en
+`requirements.txt`:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-**Contenido de `requirements.txt`:**
-
-```
-pandas>=2.0.0
-numpy>=1.24.0
-matplotlib>=3.7.0
-seaborn>=0.12.0
-scipy>=1.10.0
-statsmodels>=0.14.0
-jupyter>=1.0.0
-ipykernel>=6.0.0
-kagglehub
-```
-
-> Si aparece un error de instalación en sistemas Linux recientes (Debian/Ubuntu con Python
-> gestionado externamente), agregar el flag `--break-system-packages`:
-> `pip install -r requirements.txt --break-system-packages`
+> En sistemas Linux recientes con Python gestionado externamente, agregar `--break-system-packages`
+> si `pip` lo solicita.
 
 ### 4. Ejecutar los notebooks
-
-Abrir Jupyter desde la raíz del proyecto:
 
 ```bash
 jupyter notebook
 ```
 
-Y navegar a `notebook/Sumativa_1.ipynb` o `notebook/Sumativa_2.ipynb`. Ambos notebooks están
-diseñados para ejecutarse de **principio a fin sin intervención manual**
-(`Cell → Run All` / *Restart Kernel and Run All*), ya que:
+Todos los notebooks están diseñados para ejecutarse de principio a fin sin intervención
+(*Restart Kernel and Run All*): la semilla (`SEED = 42`) se fija al inicio, los datos se cargan
+con rutas relativas, y las figuras se guardan automáticamente en `figs/sumativaN/`.
 
-- La semilla (`SEED = 42`) se fija al inicio de cada notebook, garantizando resultados
-  idénticos en cada ejecución.
-- El dataset se descarga/carga automáticamente desde `data/framingham.csv` con rutas relativas.
-- Las figuras se guardan automáticamente en `figs/sumativa1/` o `figs/sumativa2/` según
-  corresponda.
-
-Si el archivo `data/framingham.csv` no está presente, puede obtenerse ejecutando la celda de
-descarga vía `kagglehub` incluida en el notebook de la Sumativa 1, o descargándolo manualmente
-desde el [enlace de Kaggle](https://www.kaggle.com/datasets/aasheesh200/framingham-heart-study-dataset)
-indicado arriba y ubicándolo en `data/framingham.csv`.
+**Orden recomendado de ejecución:** `Sumativa_1` → `Sumativa_2` → `Sumativa_3`. El notebook de
+la Sumativa 3 es autocontenido (parte de `data/framingham.csv` y realiza su propia imputación),
+por lo que puede ejecutarse de forma independiente.
 
 ### 5. Verificación rápida de reproducibilidad
 
-Tras ejecutar cualquiera de los dos notebooks completos, los siguientes valores deben
-coincidir exactamente (confirmando que el entorno está correctamente configurado):
+Tras ejecutar `Sumativa_3.ipynb` completo, estos valores deben coincidir exactamente:
 
 | Verificación | Valor esperado |
 |---|---|
-| Registros tras `dropna()` | 3.658 |
-| Edad media | 49,55 años |
-| Colesterol medio | 236,85 mg/dL |
-| Proporción de CHD | 15,23% |
+| Registros tras imputación | 4.240 (sin pérdida) |
+| Patrón de faltantes | MAR |
+| Modelo final (stepwise) — AUC en prueba | ≈0,705 |
+| Bootstrap de coeficientes | 10.000 remuestras, coincidencia total con Wald |
+| Monte Carlo empírico — error vs. real | 0,57 pp (vs. 5,54 pp de la normal bivariada) |
 
 ---
 
 ## 🧩 Convenciones metodológicas del proyecto
 
-- **Semilla:** `SEED = 42` en ambos notebooks, para reproducibilidad total.
-- **Nivel de significancia:** `ALPHA = 0.05` en todas las pruebas de hipótesis e intervalos.
-- **Iteraciones de remuestreo/simulación (Sumativa 2):** mínimo 10.000 (bootstrap, permutación,
-  Monte Carlo), según lo exigido por la rúbrica de la evaluación.
-- **Pruebas t:** prueba de Welch (`equal_var=False`) por defecto en todas las comparaciones de
-  dos grupos, sin asumir homocedasticidad.
-- **Intervalos de proporciones:** método de Wilson en lugar de Wald, más preciso cuando la
-  proporción muestral se aleja de 0,5.
-- **Interpretación de intervalos de confianza:** siempre sobre el *procedimiento* de
-  construcción del intervalo (frecuentista), nunca como una afirmación probabilística sobre el
-  parámetro fijo ni sobre un solo límite del intervalo.
-- **Generación de números aleatorios:** `numpy.random.default_rng(seed)` (API moderna de
-  NumPy), pasado explícitamente a cada función en la Sumativa 2, evitando depender de estado
-  aleatorio global.
-- **Estilo de código:** funciones documentadas con *docstrings* y *type hints*; constantes
-  (semilla, alfa, número de iteraciones) definidas una sola vez al inicio de cada notebook.
+- **Semilla:** `SEED = 42` en todos los notebooks (reproducibilidad total).
+- **Nivel de significancia:** `ALPHA = 0.05`.
+- **Remuestreo:** mínimo 10.000 iteraciones (bootstrap, permutación, Monte Carlo).
+- **Partición:** train/test 70/30 estratificada por la variable objetivo (por el desbalance de
+  clases, ≈15,2% CHD).
+- **Estandarización:** `StandardScaler` ajustado **solo** con el conjunto de entrenamiento.
+- **Pruebas t:** Welch (`equal_var=False`) por defecto.
+- **Intervalos de proporciones:** método de Wilson.
+- **Generación aleatoria:** `numpy.random.default_rng(seed)` pasado explícitamente a cada
+  función que remuestrea.
+- **Colinealidad:** `sysBP`/`diaBP` reemplazadas por `pulsePressure` (VIF≈3 → ≈1,3).
+- **Estilo de código:** funciones con *docstrings* (NumPy) y *type hints*; constantes definidas
+  una sola vez al inicio de cada notebook.
 
 ---
 
-## 📈 Estado actual y próximos pasos
+## 📈 Estado del proyecto
 
-- ✅ Sumativa 1 (Fase 2): entregada y corregida según retroalimentación docente.
-- ✅ Sumativa 2 (Fase 3): notebook completo, ejecutado de principio a fin sin errores,
-  incorporando las correcciones solicitadas sobre la Sumativa 1 (tamaño del efecto,
-  representatividad muestral, diagnóstico de colinealidad).
-- ⏳ Sumativa 3 (Fase 4): modelado predictivo (regresión logística, árboles de decisión,
-  Random Forest), a partir de los resultados validados y las recomendaciones documentadas al
-  cierre del notebook de la Sumativa 2 — incluyendo el uso de `pulsePressure` en lugar de
-  `sysBP`/`diaBP` por separado, y la exclusión de `heartRate` como predictor bivariado aislado.
+- ✅ Sumativa 1 (Fase 2): entregada y corregida.
+- ✅ Sumativa 2 (Fase 3): entregada (puntaje perfecto), con las correcciones de S1 incorporadas.
+- ✅ Formativa 2: práctica de modelamiento completada.
+- ✅ Sumativa 3 (Fase 4): notebook completo, ejecutado de principio a fin sin errores ni
+  advertencias, con las 3 instrucciones de la retroalimentación de S2 atendidas.
 
 ---
 
-## 📚 Fuente de datos y referencias principales
+## 📚 Fuente de datos
 
-- National Heart, Lung, and Blood Institute. (2020). *The Framingham Heart Study*. U.S.
-  Department of Health and Human Services.
-- Dataset en Kaggle: `aasheesh200/framingham-heart-study-dataset`
+National Heart, Lung, and Blood Institute. *The Framingham Heart Study*. Dataset en Kaggle:
+`aasheesh200/framingham-heart-study-dataset`.
